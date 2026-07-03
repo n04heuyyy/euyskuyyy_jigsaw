@@ -1,0 +1,17 @@
+{
+    "packID": "Default 2",
+    "packName": "CCC Characters",
+    "isCustom": false,
+    "items": [
+        {
+            "imageFileName": "ciko.png",
+            "sizeScale": 0.7,
+            "maxRotSpeed": 0.5
+        },
+        {
+            "imageFileName": "kocheng.png",
+            "sizeScale": 0.7,
+            "maxRotSpeed": 0.5
+        }
+    ]
+}

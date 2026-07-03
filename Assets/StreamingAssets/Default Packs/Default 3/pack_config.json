@@ -1,0 +1,22 @@
+{
+    "packID": "Default 3",
+    "packName": "Icons",
+    "isCustom": false,
+    "items": [
+        {
+            "imageFileName": "background.png",
+            "sizeScale": 0.5,
+            "maxRotSpeed": 0.5
+        },
+        {
+            "imageFileName": "pause.png",
+            "sizeScale": 0.5,
+            "maxRotSpeed": 0.6
+        },
+        {
+            "imageFileName": "exit.png",
+            "sizeScale": 0.5,
+            "maxRotSpeed": 0.4
+        }
+    ]
+}

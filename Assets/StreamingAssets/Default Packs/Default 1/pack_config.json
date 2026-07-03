@@ -1,0 +1,12 @@
+{
+    "packID": "Default 1",
+    "packName": "Euyskuyyy Jigsaw",
+    "isCustom": false,
+    "items": [
+        {
+            "imageFileName": "euyjigsaw.png",
+            "sizeScale": 0.8,
+            "maxRotSpeed": 0.5
+        }
+    ]
+}
