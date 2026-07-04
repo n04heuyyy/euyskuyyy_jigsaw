@@ -1,11 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI; // Wajib diaktifkan untuk memanipulasi UI Image Canvas
+using UnityEngine.UI;
 
 public class BGManager : MonoBehaviour
 {
     [Header("UI Canvas Background Component")]
-    // Tarik objek UI Image Background Canvas kamu ke kolom ini di Inspector (Berlaku untuk Menu maupun Gameplay)
     [SerializeField] private Image canvasBackgroundImage; 
     
     [Header("Asset Koleksi Latar Belakang")]
@@ -32,11 +31,6 @@ public class BGManager : MonoBehaviour
         if (canvasBackgroundImage != null)
         {
             canvasBackgroundImage.sprite = backgroundSprites[safeIndex];
-            Debug.Log($"[BackgroundManager] UI Canvas Background berhasil disinkronkan ke: {backgroundSprites[safeIndex].name}");
-        }
-        else
-        {
-            Debug.LogWarning("[BackgroundManager] Komponen 'canvasBackgroundImage' belum ditarik di Inspector!");
         }
     }
 }

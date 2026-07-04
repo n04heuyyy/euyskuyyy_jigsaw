@@ -14,10 +14,9 @@ public class PuzzlePiece : MonoBehaviour
     private bool isUVInitialized = false;
     private GameManager gameManager;
     private Renderer myRenderer;
-    private Material myMaterial;
-    private MaterialPropertyBlock propBlock; // Senjata rahasia agar animasi mengalir lancar
+    private MaterialPropertyBlock propBlock; 
 
-    // Tambahkan fungsi ini di dalam class PuzzlePiece agar gameManager bisa membaca koordinatnya
+    // Digunakan GameManager agar bisa membaca koordinatnya
     public int GetCurrentX() => currentX;
     public int GetCurrentY() => currentY;
 
@@ -26,25 +25,24 @@ public class PuzzlePiece : MonoBehaviour
         myRenderer = GetComponent<Renderer>();
     }
 
-    // UPDATE SETIAP FRAME: Memaksa potongan gambar terus bergerak mengikuti kamera live-feed
+    // Paksa potongan gambar terus bergerak mengikuti kamera live-feed
     void Update()
     {
-        // PAKSA GPU UPDATE KOORDINAT UV SETIAP FRAME
         if (isUVInitialized && myRenderer != null)
         {
-            // 1. Hitung ulang skala (Tiling) dan pergeseran (Offset) video live feed
+            // Hitung ulang skala (Tiling) dan pergeseran (Offset) video live feed
             float tilingX = 1f / currentGridSize;
             float tilingY = 1f / currentGridSize;
             float offsetX = gridX * tilingX;
             float offsetY = gridY * tilingY;
 
-            // 2. Ambil data Property Block saat ini dari renderer kepingan
+            // Ambil data Property Block saat ini dari renderer kepingan
             myRenderer.GetPropertyBlock(propBlock);
 
-            // 3. Suntikkan koordinat potong baru ke shader standar Unity (_MainTex_ST)
+            // Suntikkan koordinat potong baru ke shader standar Unity (_MainTex_ST)
             propBlock.SetVector("_MainTex_ST", new Vector4(tilingX, tilingY, offsetX, offsetY));
 
-            // 4. Terapkan kembali ke renderer secara instan di frame ini
+            // Terapkan kembali ke renderer secara instan di frame ini
             myRenderer.SetPropertyBlock(propBlock);
         }
     }
@@ -83,36 +81,34 @@ public class PuzzlePiece : MonoBehaviour
         gameManager.CheckWinCondition();
     }
 
-    // FUNGSI UTAMA: Snap Magnetik Bebas ke Petak Terdekat
+    // FSnap magnetik bebas ke grid terdekat
     public void SnapToNearestGrid()
     {
         if (isLockedPermanently) return;
 
-        // 1. Hitung seberapa jauh posisi kepingan saat ini dari titik awal pojok kiri bawah grid
+        // Hitung seberapa jauh posisi kepingan saat ini dari titik awal pojok kiri bawah grid
         float localX = transform.position.x - gameManager.originGridPos.x;
         float localY = transform.position.y - gameManager.originGridPos.y;
 
-        // 2. Cari indeks grid terdekat menggunakan pembulatan matematis
+        // Cari indeks grid terdekat menggunakan pembulatan matematis
         int targetGridX = Mathf.RoundToInt(localX / gameManager.pieceSize);
         int targetGridY = Mathf.RoundToInt(localY / gameManager.pieceSize);
 
-        // 3. Cek apakah posisi lepasnya masih masuk area papan puzzle
+        // Cek apakah posisi lepasnya masih masuk area papan puzzle
         if (targetGridX >= 0 && targetGridX < gameManager.gridSize &&
             targetGridY >= 0 && targetGridY < gameManager.gridSize)
         {
-            // --- LOGIKA ANTI MENUMPUK ---
-            // Tanya ke gameManager, apakah koordinat petak ini sudah ada kepingan lain?
+            // Cek apakah koordinat petak ini sudah ada kepingan lain
             if (gameManager.IsGridSlotOccupied(targetGridX, targetGridY, this))
             {
-                // Jika SUDAH DIHUNI, batalkan snap! 
-                // Tendang status kepingan ini ke luar grid (-1) dan biarkan posisinya menggantung di tempat dilepas
+                // Jika sudah diisi, batalkan snap
+                // Tendang status kepingan ini ke luar grid dan biarkan posisinya tetap di tempat dilepas
                 currentX = -1;
                 currentY = -1;
-                Debug.Log($"Petak ({targetGridX}, {targetGridY}) sudah diisi kepingan lain. Snap dibatalkan!");
             }
             else
             {
-                // Jika KOSONG, izinkan snap ke tengah petak tersebut
+                // Jika kosong, izinkan snap ke tengah petak tersebut
                 currentX = targetGridX;
                 currentY = targetGridY;
 
@@ -137,7 +133,7 @@ public class PuzzlePiece : MonoBehaviour
 
     public bool CheckIfCorrect()
     {
-        // Kepingan dianggap benar HANYA JIKA posisi grid tepat DAN rotasinya kembali tegak (0)
+        // Kepingan dianggap benar hanya jika posisi grid tepat dan rotasinya kembali tegak (0)
         return (currentX == correctX && currentY == correctY && currentRotation == 0);
     }
 
@@ -146,7 +142,7 @@ public class PuzzlePiece : MonoBehaviour
         isLockedPermanently = true;
     }
 
-    public bool IsLocked() => isLockedPermanently;
+    public bool IsLocked() => isLockedPermanently; // Kunci posisi piece (dipakai kalau win)
 
     // Fungsi pembantu yang dipanggil oleh gameManager saat inisialisasi
     public void SetLiveUVCoordinates(int x, int y, int size)
@@ -156,7 +152,7 @@ public class PuzzlePiece : MonoBehaviour
         currentGridSize = size;
         
         myRenderer = GetComponent<Renderer>();
-        propBlock = new MaterialPropertyBlock(); // Inisialisasi Property Block
+        propBlock = new MaterialPropertyBlock();
         isUVInitialized = true;
     }
 }

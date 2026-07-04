@@ -14,22 +14,19 @@ public class PuzzleObjectManager : MonoBehaviour
     private RenderTexture masterRenderTexture;
 
     [Header("Base Target Prefab")]
-    // Siapkan satu prefab kosong/dasar yang sudah memiliki komponen Rigidbody2D, SpriteRenderer, dan LocalBoundEnforcer
     [SerializeField] private GameObject baseTargetPrefab;
-
-    // FIX CS0103: Deklarasi penampung enforcer aktif di tingkat kelas agar dikenali oleh semua fungsi
     private List<LocalBoundEnforcer> activeEnforcers = new List<LocalBoundEnforcer>();
 
     public void InitializeMultiObjectPuzzle(GameManager gameManager)
     {
         if (gameManager == null) return;
 
-        GameObject sharedIsolationAnchor = new GameObject("Shared_Puzzle_Isolation_Anchor");
+        GameObject sharedIsolationAnchor = new GameObject("Puzzle Anchor");
         sharedIsolationAnchor.transform.position = new Vector3(200f, -50f, 0f);
 
         activeEnforcers.Clear();
 
-        // Mulai jalankan proses pemuatan berantai lintas platform via Coroutine agar ramah terhadap asinkron WebGL
+        // Mulai jalankan proses pemuatan via Coroutine
         StartCoroutine(SetupPuzzleObjectsSequenceRoutine(gameManager, sharedIsolationAnchor));
     }
 
@@ -40,13 +37,10 @@ public class PuzzleObjectManager : MonoBehaviour
 
         List<CustomItemData> targetItems = new List<CustomItemData>();
 
-        // ==================================================================
-        // JALUR 1: EKSTRAKSI DATA KONFIGURASI JSON PACK
-        // ==================================================================
         #if UNITY_WEBGL && !UNITY_EDITOR
         if (isCustomPack)
         {
-            // Ambil data pack kustom dari PlayerPrefs Browser yang sudah kita amankan sebelumnya
+            // Ambil data pack kustom dari PlayerPrefs Browser yang sudah didamankan sebelumnya
             string webKey = "";
             for (int i = 1; i <= 5; i++)
             {
@@ -82,7 +76,7 @@ public class PuzzleObjectManager : MonoBehaviour
             }
         }
         #else
-        // JALUR PC STANDALONE EXE & EDITOR: Gunakan operasi file IO lokal instan bawaanmu
+        // PC/Editor: Gunakan operasi file IO lokal instan bawaan
         string packFolderPath = "";
         if (isCustomPack)
             packFolderPath = Path.Combine(Application.persistentDataPath, "Object Packs", "Pack_" + chosenPackID);
@@ -96,15 +90,10 @@ public class PuzzleObjectManager : MonoBehaviour
             ObjectPackConfig pack = JsonUtility.FromJson<ObjectPackConfig>(jsonText);
             targetItems = pack.items;
         }
-
-        // FIX AMAN CS0103/CS0161: Berikan jeda 1 frame di jalur PC agar compiler tahu jalur ini 
-        // sah mengembalikan nilai IEnumerator dan tidak memicu error kelolosan jalur!
         yield return null; 
         #endif
 
-        // ==================================================================
-        // JALUR 2: SPAWN & LOADER SPRITE OBJEK PUZZLE
-        // ==================================================================
+        // Spawn dan load objek sprite puzzle
         int maxItemsCount = targetItems != null ? targetItems.Count : 0;
         int objectCount = Mathf.Min(maxItemsCount, 3);
 
@@ -118,7 +107,7 @@ public class PuzzleObjectManager : MonoBehaviour
             #if UNITY_WEBGL && !UNITY_EDITOR
             if (isCustomPack)
             {
-                // KUNCI COCOK VISUAL WEBGL: Jika pack kustom, bypass ambil Sprite langsung dari RAM Cache Global
+                // Jika pack kustom, bypass ambil Sprite langsung dari RAM Cache Global
                 if (WebGLTextureCache.Instance != null && WebGLTextureCache.Instance.cachedCustomSprites.ContainsKey(i))
                 {
                     loadedSprite = WebGLTextureCache.Instance.cachedCustomSprites[i];
@@ -142,7 +131,7 @@ public class PuzzleObjectManager : MonoBehaviour
                 }
             }
             #else
-            // JALUR PC EXE & EDITOR: Ambil berkas fisik gambar di harddisk secara instan
+            // PC dan editor: Ambil berkas fisik gambar di harddisk secara instan
             string imagePath = Path.Combine(packFolderPath, itemData.imageFileName);
             if (File.Exists(imagePath))
             {
@@ -178,9 +167,7 @@ public class PuzzleObjectManager : MonoBehaviour
             activeEnforcers.Add(enforcer);
         }
 
-        // ==================================================================
-        // JALUR 3: BUAT RENDER TEXTURE DAN KIRIM MATERIAL KE GRID MANAGER
-        // ==================================================================
+        // Buat trender texture dan kirim material ke game manager
         GameObject camObj = new GameObject("MasterTargetCamera");
         camObj.transform.SetParent(sharedIsolationAnchor.transform);
         camObj.transform.localPosition = new Vector3(0f, 0f, -10f);
@@ -207,7 +194,6 @@ public class PuzzleObjectManager : MonoBehaviour
         gameManager.SetupMultiObjectGrid(matsToSend);
     }
 
-    // --- PASTIKAN FUNGSI INI ADA DI DALAM KELAS PUZZLEOBJECTMANAGER.CS ---
     private Sprite LoadSpriteFromPath(string path)
     {
         if (!File.Exists(path)) return null;

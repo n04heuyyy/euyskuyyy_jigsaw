@@ -7,20 +7,20 @@ using TMPro;
 
 public class WinManager : MonoBehaviour
 {
-    [Header("Win Display Panel 1 (Standard - Dari ATAS)")]
+    [Header("Win Display Panel 1 (Standard dari atas)")]
     [SerializeField] private GameObject standardWinPanel;
-    [SerializeField] private CanvasGroup standardWinCanvasGroup; // Tambahkan CanvasGroup di Inspector!
+    [SerializeField] private CanvasGroup standardWinCanvasGroup; 
     [SerializeField] private TextMeshProUGUI standardTimeResultText;
 
-    [Header("Win Display Panel 2 (New Record - Dari BAWAH)")]
+    [Header("Win Display Panel 2 (New Record dari bawah)")]
     [SerializeField] private GameObject fastestRecordWinPanel;
-    [SerializeField] private CanvasGroup fastestRecordCanvasGroup; // Tambahkan CanvasGroup di Inspector!
+    [SerializeField] private CanvasGroup fastestRecordCanvasGroup; 
     [SerializeField] private TMP_InputField playerNameInputField;
     [SerializeField] private Button submitRecordButton;
 
     [Header("Animation Settings")]
-    [SerializeField] private float slideOffsetDistance = 500f; // Jarak sliding aman Canvas Space
-    [SerializeField] private float animDuration = 0.4f;        // Kecepatan sliding
+    [SerializeField] private float slideOffsetDistance = 500f; 
+    [SerializeField] private float animDuration = 0.4f;        
 
     private float savedFinalTime = 0f;
     private bool isNewRecordAchieved = false;
@@ -49,7 +49,7 @@ public class WinManager : MonoBehaviour
 
     void Start()
     {
-        // 1. Ambil data konfigurasi di awal
+        // Ambil data konfigurasi di awal
         currentGridSetting = PlayerPrefs.GetString("ChosenGridSizeSetting", "4x4");
         currentSpeedSetting = PlayerPrefs.GetString("ChosenSpeedSetting", "Normy");
 
@@ -61,7 +61,7 @@ public class WinManager : MonoBehaviour
         else
             activePackFolderPath = Path.Combine(Application.streamingAssetsPath, "Default Packs", chosenPackID);
 
-        // Pengaman awal game: Sembunyikan total di luar layar
+        // Sembunyikan di luar layar
         if (standardWinPanel != null) standardWinPanel.SetActive(false);
         if (fastestRecordWinPanel != null) fastestRecordWinPanel.SetActive(false);
 
@@ -87,7 +87,7 @@ public class WinManager : MonoBehaviour
         group.blocksRaycasts = false;
     }
 
-    // Fungsi pusat pemicu selebrasi menang yang dipanggil oleh GameUIManager / GridManager
+    // Handle menang yang dipanggil oleh GameUIManager / GridManager
     public void HandleGameplayWinSystem(float finalTime)
     {
         savedFinalTime = finalTime;
@@ -117,9 +117,7 @@ public class WinManager : MonoBehaviour
 
     private IEnumerator ExecuteWinPanelsSequenceRoutine()
     {
-        // ==================================================================
-        // LANGKAH 1: Nyalakan Panel Standard & Slide IN dari ATAS
-        // ==================================================================
+        // Luncurkan panel pertama dari atas
         if (standardWinPanel != null && standardWinCanvasGroup != null)
         {
             standardWinPanel.SetActive(true);
@@ -127,15 +125,12 @@ public class WinManager : MonoBehaviour
             yield return StartCoroutine(SlideAndFadeLocalRoutine(standardWinPanel, standardWinCanvasGroup, startPos, p1CenterLocalPos, 0f, 1f));
         }
 
-        // Tunggu 3 detik penuh jeda selebrasi pembacaan waktu
+        // Tunggu 3 detik jeda
         yield return new WaitForSeconds(3.0f);
 
-        // ==================================================================
-        // LANGKAH 2: Chaining Animasi Kelanjutan
-        // ==================================================================
         if (isNewRecordAchieved)
         {
-            // Jika New Record, luncurkan Panel 2 menyusul meluncur dari BAWAH
+            // Jika New Record, luncurkan panel kedua menyusul meluncur dari bawah
             if (fastestRecordWinPanel != null && fastestRecordCanvasGroup != null)
             {
                 fastestRecordWinPanel.SetActive(true);
@@ -151,7 +146,7 @@ public class WinManager : MonoBehaviour
         }
         else
         {
-            // Jika TIDAK New Record, usir Panel 1 meluncur kembali ke ATAS keluar layar
+            // Jika tidak New Record, cukup keluarkan panel pertama
             if (standardWinCanvasGroup != null && standardWinPanel != null)
             {
                 Vector3 endPos = p1CenterLocalPos + new Vector3(0f, slideOffsetDistance, 0f);
@@ -167,7 +162,7 @@ public class WinManager : MonoBehaviour
 
         string nameInput = playerNameInputField.text.Trim();
 
-        // KUNCI PROTEKSI NAMA KOSONG: Jika dikosongkan, otomatis ubah menjadi "Anonymous"
+        // Jika dikosongkan, otomatis ubah menjadi "Anonymous"
         if (string.IsNullOrEmpty(nameInput))
         {
             nameInput = "Anonymous";
@@ -209,11 +204,10 @@ public class WinManager : MonoBehaviour
         }
         catch { }
 
-        // KUNCI PENUTUP: Hilangkan kedua panel sekaligus ke arah asalnya masing-masing secara bersamaan
         StartCoroutine(DismissPanelsRoutine());
     }
 
-    private IEnumerator DismissPanelsRoutine()
+    private IEnumerator DismissPanelsRoutine() // Keluarkan kedua panel
     {
         Coroutine p1 = null;
         Coroutine p2 = null;
@@ -239,7 +233,7 @@ public class WinManager : MonoBehaviour
         isNewRecordAchieved = false;
     }
 
-    // Sub-Coroutine Core Matematika Lerp untuk Transisi Alpha CanvasGroup
+    // Coroutine animasi sliding dan fade
     private IEnumerator SlideAndFadeLocalRoutine(GameObject panel, CanvasGroup group, Vector3 start, Vector3 target, float startAlpha, float endAlpha)
     {
         float elapsed = 0f;
@@ -276,8 +270,6 @@ public class WinManager : MonoBehaviour
         int minutes = Mathf.FloorToInt(time / 60f);
         int seconds = Mathf.FloorToInt(time % 60f);
         targetText.text = string.Format("Your final time: {0:00}:{1:00}", minutes, seconds);
-        
-        // Paksa TextMeshPro melakukan pembangunan ulang mesh huruf seketika tanpa delay frame
         targetText.ForceMeshUpdate(true);
     }
 }

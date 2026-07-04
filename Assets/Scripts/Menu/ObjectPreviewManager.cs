@@ -75,15 +75,40 @@ public class ObjectPreviewManager : MonoBehaviour
         }
         if (uiTargetRawImage != null) uiTargetRawImage.texture = previewRenderTexture;
     }
+
+    public void LoadObjectPack(int packIndex)
+    {
+        CustomPackManager packManager = Object.FindFirstObjectByType<CustomPackManager>();
+        if (packManager == null || packManager.allLoadedPacks == null || packManager.allLoadedPacks.Count == 0) return;
+
+        int safeIndex = Mathf.Clamp(packIndex, 0, packManager.allLoadedPacks.Count - 1);
+        ObjectPackConfig config = packManager.allLoadedPacks[safeIndex];
+        if (config == null) return;
+
+        // Baca langsung dari simpanan custom pack di appdata (custom)
+        string packFolderPath = "";
+        if (config.isCustom) {
+            packFolderPath = Path.Combine(rootCustomPacksPath, "Pack_" + config.packID);
+        } else {
+            // Baca dari folder StreamingAssets (default)
+            packFolderPath = Path.Combine(Application.streamingAssetsPath, "Default Packs", config.packID);
+        }
+
+        CustomItemData[] fixedSizeArray = new CustomItemData[3] { null, null, null };
+        for (int i = 0; i < Mathf.Min(config.items.Count, 3); i++) fixedSizeArray[i] = config.items[i];
+
+        ProcessObjectData(fixedSizeArray, packFolderPath);
+        UpdateBestTimeDisplay();
+    }
     
-    public void LoadObjectPackFromCustomData(CustomItemData[] customItems, string packFolderPath)
+    public void ProcessObjectData(CustomItemData[] customItems, string packFolderPath)
     {
         // Hancurkan kandang lama dan bersihkan database map kustom
         if (currentAnchor != null) Destroy(currentAnchor);
         activeEnforcers.Clear();
         customPreviewObjectsMap.Clear(); 
 
-        currentAnchor = new GameObject("Menu_Preview_Custom_Pack_Anchor");
+        currentAnchor = new GameObject("Menu Preview Anchor");
         currentAnchor.transform.position = new Vector3(500f, -50f, 0f);
 
         // Loop menelusuri seluruh 3 slot potensial secara bersamaan
@@ -91,13 +116,13 @@ public class ObjectPreviewManager : MonoBehaviour
         {
             CustomItemData itemData = customItems[i];
             
-            // Jika slot data kosong atau belum diupload gambarnya, lewati slot ini tanpa menghancurkan loop
+            // Jika slot data kosong atau belum diupload gambarnya, lewati
             if (itemData == null || string.IsNullOrEmpty(itemData.imageFileName)) continue;
 
             string fullImagePath = Path.Combine(packFolderPath, itemData.imageFileName);
 
             // Buat struktur objek baru untuk slot aktif ini
-            GameObject spawnedTarget = new GameObject($"Custom_Preview_Obj_Slot_{i}");
+            GameObject spawnedTarget = new GameObject($"Preview Object Slot_{i}");
             spawnedTarget.transform.SetParent(currentAnchor.transform);
 
             spawnedTarget.layer = PREVIEW_LAYER;
@@ -125,11 +150,8 @@ public class ObjectPreviewManager : MonoBehaviour
             customPreviewObjectsMap[i] = spawnedTarget;
         }
 
-        // Ambil nilai kecepatan gerak linier aktif secara langsung dari PlayerPrefs
+        // Ambil nilai kecepatan gerak linier dulu
         float currentSpeedValue = PlayerPrefs.GetFloat("ChosenSpeedValue", 3.0f);
-
-        // Suntikkan langsung ke semua enforcer objek baru yang dilahirkan saat berganti pack
-        UpdateAllObjectsSpeed(currentSpeedValue);
 
         // Ambil index speed terakhir yang tersimpan, lalu konversikan ke float speed gerak linier-nya
         int savedSpeedIndex = PlayerPrefs.GetInt("SavedSpeedModeIndex", 1); // Default ke 1 (Normy)
@@ -138,10 +160,10 @@ public class ObjectPreviewManager : MonoBehaviour
         else if (savedSpeedIndex == 2) currentSpeedValue = 4.5f; // Speedy
         else if (savedSpeedIndex == 3) currentSpeedValue = 6.0f; // GAS GAS GAS
 
-        // Terapkan langsung ke semua enforcer yang baru lahir agar kecepatannya tidak kembali melambat
+        // Terapkan langsung ke semua enforcer agar kecepatannya tidak kembali melambat
         UpdateAllObjectsSpeed(currentSpeedValue);
 
-        // Buat Kamera Solid Target Jendela Preview Atas
+        // Buat preview target camera
         GameObject camObj = new GameObject("PreviewTargetCamera");
         camObj.transform.SetParent(currentAnchor.transform);
         camObj.transform.localPosition = new Vector3(0f, 0f, -10f);
@@ -161,7 +183,7 @@ public class ObjectPreviewManager : MonoBehaviour
     // Coroutine Asinkron untuk membaca file lokal maupun internal StreamingAssets secara seragam
     private IEnumerator ApplySpriteRuntimeAsync(SpriteRenderer sr, string path, GameObject target, CustomItemData itemData)
     {
-        // Jika path hancur atau nama file kosong akibat post-save cleanup, hentikan coroutine seketika!
+        // Jika path hancur atau nama file kosong akibat post-save cleanup, hentikan
         if (string.IsNullOrEmpty(path) || path.EndsWith("/") || path.EndsWith("\\"))
         {
             yield break;
@@ -202,40 +224,13 @@ public class ObjectPreviewManager : MonoBehaviour
                 float targetClampedSize = Mathf.Lerp(1.0f, 2.0f, itemData.sizeScale); 
                 float finalScale = normalizer * targetClampedSize;
                 
-                // Terapkan langsung ukuran mutakhir secara instan tanpa lonjakan visual kasar
+                // Terapkan langsung ukuran akhir secara instan
                 target.transform.localScale = new Vector3(finalScale, finalScale, 1f);
 
                 LocalBoundEnforcer enforcer = target.GetComponent<LocalBoundEnforcer>();
                 if (enforcer != null) enforcer.ApplyCustomPanelRotation();
             } 
         }
-    }
-
-    
-    // ganti preview pack global oleh CustomPackManager
-    public void LoadObjectPack(int packIndex)
-    {
-        CustomPackManager packManager = Object.FindFirstObjectByType<CustomPackManager>();
-        if (packManager == null || packManager.allLoadedPacks == null || packManager.allLoadedPacks.Count == 0) return;
-
-        int safeIndex = Mathf.Clamp(packIndex, 0, packManager.allLoadedPacks.Count - 1);
-        ObjectPackConfig config = packManager.allLoadedPacks[safeIndex];
-        if (config == null) return;
-
-        // Murni membaca langsung dari folder induk persistent AppData
-        string packFolderPath = "";
-        if (config.isCustom) {
-            packFolderPath = Path.Combine(rootCustomPacksPath, "Pack_" + config.packID);
-        } else {
-            // Paket default dibaca lurus dari folder StreamingAssets proyekmu
-            packFolderPath = Path.Combine(Application.streamingAssetsPath, "Default Packs", config.packID);
-        }
-
-        CustomItemData[] fixedSizeArray = new CustomItemData[3] { null, null, null };
-        for (int i = 0; i < Mathf.Min(config.items.Count, 3); i++) fixedSizeArray[i] = config.items[i];
-
-        LoadObjectPackFromCustomData(fixedSizeArray, packFolderPath);
-        UpdateBestTimeDisplay();
     }
 
     public void UpdateBestTimeDisplay()
@@ -292,49 +287,19 @@ public class ObjectPreviewManager : MonoBehaviour
         if (clearBestTimeButton != null) clearBestTimeButton.interactable = false;
     }
 
-    public void ClearCurrentBestTime()
-    {
-        CustomPackManager packManager = Object.FindFirstObjectByType<CustomPackManager>();
-        if (packManager == null || packManager.allLoadedPacks.Count == 0) return;
-
-        ObjectPackConfig activePack = packManager.GetActivePackConfig();
-        if (activePack == null) return;
-
-        string packFolderPath = activePack.isCustom ? 
-            Path.Combine(Application.persistentDataPath, "Object Packs", "Pack_" + activePack.packID) :
-            Path.Combine(Application.streamingAssetsPath, "Default Packs", activePack.packID);
-
-        string bestTimeFilePath = Path.Combine(packFolderPath, "best_times.json");
-        if (File.Exists(bestTimeFilePath))
-        {
-            string currentGrid = PlayerPrefs.GetString("ChosenGridSizeSetting", "4x4");
-            string currentSpeed = PlayerPrefs.GetString("ChosenSpeedSetting", "Normy");
-
-            string jsonText = File.ReadAllText(bestTimeFilePath);
-            BestTimeCollection collection = JsonUtility.FromJson<BestTimeCollection>(jsonText);
-            collection.records.RemoveAll(r => r.gridSize == currentGrid && r.speedMode == currentSpeed);
-
-            string updatedJson = JsonUtility.ToJson(collection, true);
-            File.WriteAllText(bestTimeFilePath, updatedJson);
-            
-            UpdateBestTimeDisplay();
-        }
-    }
-
-    // Dipanggil saat tombol delete diklik: Memunculkan popup & memblokir sidebar UI
+    // Munculkan popup notifikasi clear ketika tombol clear ditekan
     public void TriggerClearBestTimeConfirmation()
     {
         TriggerPopupAnimation(clearBestTimeConfirmationPopup, targetShowY);
 
         MainMenuUIManager menuUI = Object.FindFirstObjectByType<MainMenuUIManager>();
-        if (menuUI != null) menuUI.SetSidebarInteractable(false, false); // Blokir tombol luar demi keamanan
+        if (menuUI != null) menuUI.SetSidebarInteractable(false, false); // Blokir tombol luar
     }
 
     // Konfirmasi hapus
     public void ConfirmClearBestTimeYes()
     {
-        // Eksekusi penghapusan data riil pada berkas JSON
-        ExecuteActualClearBestTimeLogic();
+        ClearRecordTime();
 
         // Sembunyikan kembali popup ke bawah layar
         TriggerPopupAnimation(clearBestTimeConfirmationPopup, hidePositionY);
@@ -347,16 +312,14 @@ public class ObjectPreviewManager : MonoBehaviour
     // Batalkan
     public void ConfirmClearBestTimeNo()
     {
-        // Sembunyikan kembali popup ke bawah layar tanpa menghapus apapun
         TriggerPopupAnimation(clearBestTimeConfirmationPopup, hidePositionY);
 
-        // Pulihkan interaksi tombol luar
         MainMenuUIManager menuUI = Object.FindFirstObjectByType<MainMenuUIManager>();
         if (menuUI != null) menuUI.SetSidebarInteractable(true, false);
     }
 
-    // Fungsi internal pembuat perubahan riil pada file JSON
-    private void ExecuteActualClearBestTimeLogic()
+    // Bersihkan data rekor di JSON
+    private void ClearRecordTime()
     {
         CustomPackManager packManager = Object.FindFirstObjectByType<CustomPackManager>();
         if (packManager == null || packManager.allLoadedPacks.Count == 0) return;
@@ -385,7 +348,7 @@ public class ObjectPreviewManager : MonoBehaviour
         }
     }
 
-    // Fungsi utilitas penggerak animasi meluncur (Sliding) untuk Popup
+    // Fungsi animasi sliding
     private void TriggerPopupAnimation(RectTransform panel, float targetY) 
     { 
         if (panel == null) return; 
@@ -408,7 +371,6 @@ public class ObjectPreviewManager : MonoBehaviour
         panel.anchoredPosition = targetPos; 
     }
 
-    // --- FIX LIVE SLIDER SIZE: KINI AKURAT MENGUBAH INDEKS OBJEK YANG DIKUNCI ---
     public void UpdateLiveScaleFromSlider(int slotIndex, float sliderValue)
     {
         // Cari langsung objek di dalam map berdasarkan ID slot yang sedang digeser slidernya
@@ -431,7 +393,6 @@ public class ObjectPreviewManager : MonoBehaviour
         }
     }
 
-    // --- FIX LIVE SLIDER ROTASI: KINI AKURAT MENGUBAH INDEKS KECEPATAN PUTAR ---
     public void UpdateLiveRotationFromSlider(int slotIndex, float sliderValue)
     {
         if (customPreviewObjectsMap.ContainsKey(slotIndex) && customPreviewObjectsMap[slotIndex] != null)
@@ -452,9 +413,6 @@ public class ObjectPreviewManager : MonoBehaviour
                 }
                 else
                 {
-                    // --- SINKRON 250f ---
-                    // Deviasi maksimal adalah 0.5f. Jika dikali -500f, maka batas puncaknya 
-                    // adalah tepat -250f (Putar Kanan) atau +250f (Putar Kiri), sama dengan global settings!
                     enforcer.maxRotationSpeed = deviation * -360f; 
                 }
                 
@@ -466,7 +424,7 @@ public class ObjectPreviewManager : MonoBehaviour
 
     public void UpdateAllObjectsSpeed(float newSpeed)
     {
-        // Alirkan angka kecepatan baru dari opsi sidebar menu ke semua objek yang aktif di paket saat ini
+        // Terapkan speed ke semua objek yang aktif di paket saat ini
         foreach (LocalBoundEnforcer enforcer in activeEnforcers)
         {
             if (enforcer != null)
@@ -476,7 +434,7 @@ public class ObjectPreviewManager : MonoBehaviour
         }
     }
 
-    // --- FUNGSI BARU: RESET MUTLAK POSISI, ROTASI VISUAL, DAN FISIK ITEM ---
+    // Reset semua kriteria obyek di preview
     public void ResetSingleObjectPhysicsAndRotation(int slotIndex)
     {
         if (customPreviewObjectsMap.ContainsKey(slotIndex) && customPreviewObjectsMap[slotIndex] != null)

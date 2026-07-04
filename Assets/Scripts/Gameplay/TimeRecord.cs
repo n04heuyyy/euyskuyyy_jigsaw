@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 
 [System.Serializable]
-public class BestTimeRecord
+public class BestTimeRecord // Simpanan data record time
 {
     public string gridSize;  
     public string speedMode; 
@@ -12,6 +12,5 @@ public class BestTimeRecord
 [System.Serializable]
 public class BestTimeCollection
 {
-    // FIX CS0426 & CS0029: Tipe data List langsung mengarah ke BestTimeRecord secara lurus
     public List<BestTimeRecord> records = new List<BestTimeRecord>();
 }

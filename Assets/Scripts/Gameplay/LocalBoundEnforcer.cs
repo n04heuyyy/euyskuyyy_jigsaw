@@ -6,7 +6,7 @@ public class LocalBoundEnforcer : MonoBehaviour
     private float limitY;
     private Rigidbody2D rb2d;
     
-    // Tambahkan variabel untuk mengunci kecepatan konstan Chimmy agar tidak melambat
+    // Tambahkan variabel untuk mengunci kecepatan konstan objek
     private float constantSpeed; 
     // Simpan target kecepatan sudut fisik (bukan rotasi transform)
     private float targetAngularVelocity = 0f;
@@ -19,7 +19,7 @@ public class LocalBoundEnforcer : MonoBehaviour
         limitY = rangeY * 0.65f;
         rb2d = GetComponent<Rigidbody2D>();
         
-        // Catat kecepatan awal si Chimmy saat game dimulai
+        // Catat kecepatan awal objek 
         if (rb2d != null)
         {
             // Pastikan gesekan rotasi mati total agar awet berputar
@@ -29,14 +29,12 @@ public class LocalBoundEnforcer : MonoBehaviour
             constantSpeed = rb2d.linearVelocity.magnitude;
             if (constantSpeed < 0.1f) constantSpeed = 5f; 
 
-            // --- 2. ACAK POSISI AWAL (ANTI-MONOTON DI AWAL GAME) ---
             // Begitu game di-start/reset, objek tidak mulai dari tengah (0,0), 
             // melainkan langsung dilempar ke titik acak di dalam kandang kamera
             float randomStartX = Random.Range(-limitX * 0.7f, limitX * 0.7f);
             float randomStartY = Random.Range(-limitY * 0.7f, limitY * 0.7f);
             transform.localPosition = new Vector3(randomStartX, randomStartY, transform.localPosition.z);
 
-            // --- 3. ACAK ARAH VEKTOR AWAL (DIAGONAL VARIAN) ---
             // Buat arah tembakan awal benar-benar acak ke segala sudut (360 derajat)
             float randomAngle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
             Vector2 randomDirection = new Vector2(Mathf.Cos(randomAngle), Mathf.Sin(randomAngle));
@@ -66,7 +64,6 @@ public class LocalBoundEnforcer : MonoBehaviour
             currentVelocity.y += Random.Range(-0.2f, 0.2f);
             rb2d.linearVelocity = currentVelocity.normalized * constantSpeed;
 
-            // --- FIXED: JIKA PAKAI ROTASI PANEL KUSTOM, JANGAN TIMPA DENGAN TARGET SLIDER GLOBAL OUTSIDE ---
             if (useCustomPanelRotation)
             {
                 rb2d.angularVelocity = maxRotationSpeed;
@@ -84,7 +81,7 @@ public class LocalBoundEnforcer : MonoBehaviour
     }
 
     // Dipanggil secara konstan oleh PhysX Engine Unity untuk mengunci gaya rotasi angular 
-    // agar momentum putaran tidak diredam menjadi 0 setelah benturan atau gesekan geser.
+    // agar momentum putaran tidak diredam menjadi 0 setelah benturan atau gesekan geser
     void FixedUpdate()
     {
         if (rb2d != null)
@@ -94,19 +91,13 @@ public class LocalBoundEnforcer : MonoBehaviour
                 // Kunci putaran kustom dari slider panel kustom secara mutlak tiap frame fisika
                 rb2d.angularVelocity = maxRotationSpeed;
             }
-            // Catatan: Jika tidak dalam mode kustom, biarkan sistem putaran slider global yang mengendalikannya via SetRotationFromSlider
         }
     }
 
-    // --- FUNGSI TANGGAPAN UNTUK DIHUBUNGKAN KE SLIDER ---
-    // Fungsi ini akan dipanggil oleh PuzzleObjectManager saat nilai slider bergeser
+    // Fungsi ini akan dipanggil oleh GameManager untuk apply physics
     public void SetRotationFromSlider(float sliderValue, float maxRotationSpeed)
     {
         if (rb2d == null) return;
-
-        // --- SOLUSI PAMUNGKAS: PAKSA RIGIDBODY BANGUN (WAKE UP) ---
-        // Ini akan membongkar status 'Sleeping' dari mesin fisika Unity 
-        // sehingga Rigidbody dipaksa aktif $100\%$ untuk menerima kalkulasi baru
         rb2d.WakeUp();
 
         // Reset total momentum lama agar tidak mengunci koordinat sumbu Z

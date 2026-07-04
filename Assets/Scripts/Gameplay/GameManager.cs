@@ -13,12 +13,11 @@ public class GameManager : MonoBehaviour
 
     public GameUIManager uiManager;
 
-    // --- TAMBAHKAN VARIABEL PERGESERAN DI SINI ---
     [Tooltip("Geser seluruh area puzzle ke kanan (Sumbu X positif) agar tidak tertutup UI")]
     public float offsetXToRight = 2f; 
 
     // Variabel untuk melacak koordinat Z paling depan saat ini.
-    // Semakin minus nilainya, objek akan semakin dekat ke kamera (berada di paling depan).
+    // Semakin minus nilainya, objek akan semakin dekat ke kamera (berada di paling depan)
     private float currentFrontZ = -0.01f;
 
     [Header("Scattering Area")]
@@ -35,14 +34,14 @@ public class GameManager : MonoBehaviour
     private Vector3 dragOffset;
 
     [Header("Gameplay Audio AudioSources & Clips")]
-    [SerializeField] private AudioSource gameplayAudioSource; // Tempel AudioSource global di arena gameplay ke sini!
+    [SerializeField] private AudioSource gameplayAudioSource; 
     [SerializeField] private AudioClip dragSFX;
     [SerializeField] private AudioClip dropSFX;
     [SerializeField] private AudioClip rotateSFX;
     [SerializeField] private AudioClip solveSuccessSFX;
 
     [Header("Manager Connection")]
-    [SerializeField] private PuzzleObjectManager puzzleObjectManager; // Tarik PuzzleObjectManager ke sini
+    [SerializeField] private PuzzleObjectManager puzzleObjectManager;
 
     // Variabel pembantu untuk mencatat waktu klik ganda di mobile/PC
     private float lastClickTime = 0f;
@@ -50,8 +49,6 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-
-        // --- AMBIL DATA DARI MENU UTAMA (SINKRONISASI GAMEPLAY) ---
         // PlayerPrefs.GetInt/GetFloat mengambil data berdasarkan kata kunci (Key) yang kita simpan di MainMenuUIManager.
         // Angka di sebelah kanan (seperti 4, 5f, 0) adalah nilai cadangan (Fallback) jika data dari menu tidak ditemukan.
 
@@ -60,7 +57,6 @@ public class GameManager : MonoBehaviour
             gridSize = PlayerPrefs.GetInt("ChosenGridSize", 4);
         }
 
-        // SOLUSI TOTAL PROTEKSI VOLUME GAMEPLAY
         float savedMusicVol = PlayerPrefs.GetFloat("MusicVolume", 0.75f);
         float savedSFXVol = PlayerPrefs.GetFloat("SFXVolume", 0.75f);
 
@@ -69,8 +65,7 @@ public class GameManager : MonoBehaviour
         {
             if (source != null)
             {
-                // PROTEKSI MUTLAK: Selama AudioSource tersebut di-set Loop (Musik Jigsaw),
-                // maka WAJIB hukumnya mengikuti slider Music, tidak peduli apa pun nama objeknya!
+                // Selama AudioSource tersebut di-set Loop, wajib mengikuti slider Music
                 if (source.loop)
                 {
                     source.volume = savedMusicVol;
@@ -82,23 +77,7 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // Gandakan proteksi khusus untuk alat pemutar SFX puzzle-mu sendiri
-        if (gameplayAudioSource != null)
-        {
-            // Jika kamu tidak sengaja menghubungkan AudioSource musik ke sini, kita paksa matikan loop-nya
-            // agar kamu sadar bahwa ini adalah slot khusus SFX, bukan BGM.
-            if (gameplayAudioSource.loop)
-            {
-                Debug.LogWarning("[Warning] gameplayAudioSource terhubung ke objek BGM! Harap buat AudioSource terpisah khusus SFX.");
-                gameplayAudioSource.volume = savedMusicVol; // Toleransi darurat jika slot tertukar
-            }
-            else
-            {
-                gameplayAudioSource.volume = savedSFXVol;
-            }
-        }
-
-        // Alur Terkontrol: GridManager yang meminta data ke PuzzleObjectManager saat dia sudah siap
+        // Minta data ke PuzzleObjectManager saat dia sudah siap
         if (puzzleObjectManager != null)
         {
             puzzleObjectManager.InitializeMultiObjectPuzzle(this);
@@ -114,10 +93,10 @@ public class GameManager : MonoBehaviour
         // Jalankan pembuatan grid utama
         GeneratePuzzleGrid();
     }
-    // Perbarui fungsi GeneratePuzzleGrid lamamu agar mendukung multi-benda
+    
     public void GeneratePuzzleGrid()
     {
-        // 1. Bersihkan objek lama di Hierarchy
+        // Bersihkan objek lama di Hierarchy
         foreach (PuzzlePiece piece in allPieces) 
         {
             if (piece != null) Destroy(piece.gameObject);
@@ -129,14 +108,11 @@ public class GameManager : MonoBehaviour
         // Ambil Master Material tunggal
         Material masterMat = activeMaterials[0];
 
-        // --- KUNCI UKURAN ABSOLUT: ANTI MELUBER KELUAR LAYAR ---
-        // 'totalPuzzleAreaSize' di Inspector bertindak sebagai batas maksimal bingkai luar.
-        // Kita kurangi padding sedikit agar kepingan pas berada di dalam garis abu-abu.
+        // 'totalPuzzleAreaSize' di Inspector bertindak sebagai batas maksimal bingkai luar
+        // Sesuaikan padding agar kepingan pas berada di dalam garis abu-abu
         float innerPadding = 0.8f; 
         float usablePuzzleArea = totalPuzzleAreaSize - innerPadding;
 
-        // Ukuran kepingan SEHARUSNYA mengecil jika grid besar, dan membesar jika grid kecil.
-        // Rumus: Total Area dibagi Jumlah Grid.
         pieceSize = usablePuzzleArea / gridSize;
         Vector3 newPieceScale = new Vector3(pieceSize, pieceSize, 1f);
 
@@ -145,9 +121,8 @@ public class GameManager : MonoBehaviour
             -(usablePuzzleArea / 2f) + (pieceSize / 2f) + offsetXToRight,
             -(usablePuzzleArea / 2f) + (pieceSize / 2f)
         );
-        // ------------------------------------------------------------------
 
-        // 2. Set Ukuran Bingkai Luar agar Selalu Statis & Sesuai Preset 6x6 Kamu
+        // Set ukuran bingkai luar agar sesuai semua opsi grid
         if (puzzleFrameRenderer != null)
         {
             float framePadding = 0.1f; 
@@ -157,7 +132,7 @@ public class GameManager : MonoBehaviour
 
         int currentSlotIndex = 0;
 
-       // LOOPING GRID STANDAR (Satu Gambar Utuh Dipotong-potong)
+        // Looping grid (satu gambar utuh dipotong2)
         for (int x = 0; x < gridSize; x++)
         {
             for (int y = 0; y < gridSize; y++)
@@ -212,10 +187,8 @@ public class GameManager : MonoBehaviour
                 currentSlotIndex++;
             }
         }
-        Debug.Log($"[Sukses] Grid {gridSize}x{gridSize} terbentuk pas di dalam bingkai.");
     }
 
-    // UPDATE DENGAN INPUT SYSTEM BARU (Sama seperti sebelumnya)
     void Update()
     {
         Mouse currentMouse = Mouse.current;
@@ -223,7 +196,6 @@ public class GameManager : MonoBehaviour
 
         Vector2 mousePosition = currentMouse.position.ReadValue();
 
-        // --- FIX CONTROLS MOBILE & PC SINKRON ---
         if (currentMouse.leftButton.wasPressedThisFrame)
         {
             // Ambil selisih waktu ketukan klik kiri / sentuhan layar untuk deteksi Double Click/Tap
@@ -232,19 +204,19 @@ public class GameManager : MonoBehaviour
 
             if (timeSinceLastClick <= DOUBLE_CLICK_TIME_THRESHOLD)
             {
-                // INPUT MOBILE/TOUCH: Double Click memicu ROTASI kepingan puzzle
+                // Mobile: Dobel klik rotate kepingan puzzle
                 HandleMobileRotate(mousePosition);
             }
             else
             {
-                // Klik pertama / biasa: Memulai DRAG kepingan
+                // Klik kiri: Memulai drag kepingan
                 HandleClickLeft(mousePosition);
             }
         }
         if (currentMouse.leftButton.isPressed && selectedPiece != null) HandleDrag(mousePosition);
         if (currentMouse.leftButton.wasReleasedThisFrame && selectedPiece != null) HandleDrop();
         
-        // INPUT PC BAWAH: Tetap perbolehkan Klik Kanan sebagai alternatif rotasi tercepat di Windows/Mac
+        // Tetap perbolehkan Klik Kanan sebagai alternatif rotasi tercepat di Windows/Mac
         if (currentMouse.rightButton.wasPressedThisFrame) HandleClickRight(mousePosition);
     }
 
@@ -259,15 +231,14 @@ public class GameManager : MonoBehaviour
             {
                 selectedPiece = piece;
 
-                // --- BAWA KE PALING DEPAN SAAT DI-DRAG ---
-                // Kurangi nilai Z global sedikit saja agar kepingan ini menjadi yang paling dekat dengan kamera
+                // Saat di drag, bawa ke paling depan layar
+                // Kurangi nilai Z global sedikit saja agar paling dekat dengan kamera
                 currentFrontZ -= 0.001f; 
                 
                 // Berikan nilai Z baru tersebut ke kepingan yang sedang ditarik
                 Vector3 tempPos = selectedPiece.transform.position;
                 tempPos.z = currentFrontZ;
                 selectedPiece.transform.position = tempPos;
-                // -----------------------------------------
 
                 Vector3 worldMousePos = Camera.main.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, Camera.main.nearClipPlane));
                 dragOffset = selectedPiece.transform.position - new Vector3(worldMousePos.x, worldMousePos.y, selectedPiece.transform.position.z);
@@ -281,15 +252,14 @@ public class GameManager : MonoBehaviour
 
     void HandleDrag(Vector2 mousePos)
     {
-        // 1. Konversi posisi layar mouse ke posisi dunia (World Space)
+        // Konversi posisi layar mouse ke posisi dunia (World Space)
         Vector3 worldMousePos = Camera.main.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, Mathf.Abs(Camera.main.transform.position.z)));
         
-        // 2. Hitung target posisi kepingan berdasarkan pergerakan mouse + offset awal
+        // Hitung target posisi kepingan berdasarkan pergerakan mouse + offset awal
         float targetX = worldMousePos.x + dragOffset.x;
         float targetY = worldMousePos.y + dragOffset.y;
 
-        // --- PENGAMAN DRAG UNTUK KEPINGAN RAKSASA ---
-        // Gunakan setengah ukuran kepingan sebagai padding agar bodi kepingan tidak amblas keluar layar saat ditarik mouse
+        // Gunakan setengah ukuran kepingan sebagai padding agar bodi kepingan tidak keluar layar saat ditarik mouse
         float radiusPadding = pieceSize / 2f;
 
         float clampedX = Mathf.Clamp(targetX, scatterMinBounds.x + radiusPadding, scatterMaxBounds.x - radiusPadding);
@@ -300,13 +270,11 @@ public class GameManager : MonoBehaviour
 
     void HandleDrop()
     {
-        // --- TETAP PERTAHANKAN POSISI Z DI PALING DEPAN SETELAH DI-DROP ---
-        // Kita tidak mengembalikan Z ke 0, melainkan mengunci posisi Z kepingan ini 
-        // pada nilai 'currentFrontZ' terbaru agar dia tetap berada di atas kepingan yang tidak disentuh.
+        // Janagn kembalikan Z ke 0, tapi kunci posisi Z kepingan ini pada nilai 'currentFrontZ'
+        // terbaru agar dia tetap berada di atas kepingan yang tidak disentuh
         Vector3 tempPos = selectedPiece.transform.position;
         tempPos.z = currentFrontZ;
         selectedPiece.transform.position = tempPos;
-        // ------------------------------------------------------------------
 
         selectedPiece.SnapToNearestGrid(); 
         selectedPiece = null;
@@ -325,7 +293,6 @@ public class GameManager : MonoBehaviour
         {
             PuzzlePiece piece = hit.collider.GetComponent<PuzzlePiece>();
             if (piece != null) piece.RotatePiece();
-            // PUTAR AUDIO SFX ROTATE
             if (gameplayAudioSource != null && rotateSFX != null)
             {
                 gameplayAudioSource.PlayOneShot(rotateSFX, PlayerPrefs.GetFloat("SFXVolume", 0.75f));
@@ -333,7 +300,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // Fungsi internal penerjemah double tap mobile sentuhan jari layar
     void HandleMobileRotate(Vector2 mousePos)
     {
         // Batalkan proses seret jika tidak sengaja dipicu double tap saat menggenggam objek
@@ -370,16 +336,14 @@ public class GameManager : MonoBehaviour
 
         if (isAllCorrect)
         {
-            Debug.Log("WIN CONDITION TERPENUHI!");
             foreach (PuzzlePiece piece in allPieces) piece.LockPiecePermanently();
             
-            // PUTAR SFX BERHASIL SOLVE
             if (gameplayAudioSource != null && solveSuccessSFX != null)
             {
                 gameplayAudioSource.PlayOneShot(solveSuccessSFX, PlayerPrefs.GetFloat("SFXVolume", 0.75f));
             }
 
-            // KUNCI RE-ROUTE SINKRONISASI: Alirkan ke GameUIManager untuk mematikan detak jam
+            // Bawa ke GameUIManager untuk mematikan detak jam
             if (uiManager != null)
             {
                 uiManager.StopTimerOnWin(); 
@@ -398,7 +362,7 @@ public class GameManager : MonoBehaviour
             // Jika ada kepingan lain yang koordinat grid-nya saat ini sama dengan yang diincar
             if (piece.GetCurrentX() == targetX && piece.GetCurrentY() == targetY)
             {
-                return true; // Slot sudah terisi!
+                return true; // Slot sudah terisi
             }
         }
         return false; // Slot kosong dan aman ditempati
@@ -406,35 +370,32 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator ApplyPhysicsSettingsRoutine()
     {
-        // --- KUNCI PENGAMAN FISIKA: TUNGGU 1 FRAME INTEGRASI ---
-        // Menunggu sejenak agar komponen Rigidbody2D di semua prefab selesai di-spawn
+        // Tunggu sejenak agar komponen Rigidbody2D di semua prefab selesai di-spawn
         // dan status memori fisika Unity sudah terbangun 100%
         yield return new WaitForSeconds(0.05f);
 
-        // 1. Ambil Parameter Nilai dari Menu Utama
+        // Ambil parameter nilai dari menu utama
         float loadedSpeed = PlayerPrefs.GetFloat("ChosenSpeedValue", 5f);
         
         // Mengambil posisi slider terakhir (misal di menu diatur berputar ke kanan/kiri)
         // Jika tidak ada data di menu, default ke 0.5f (artinya diam tidak berputar)
         float loadedSliderRotationValue = PlayerPrefs.GetFloat("ChosenRotationSliderValue", 0.5f); 
 
-        // 2. Cari Semua Objek Memantul yang Aktif di Gameplay Scene
+        // Cari semua objek memantul yang aktif di gameplay scene
         LocalBoundEnforcer[] gameplayEnforcers = Object.FindObjectsByType<LocalBoundEnforcer>(FindObjectsSortMode.None);
-        
-        Debug.Log($"[Fisika Sinkron] Menerapkan Speed: {loadedSpeed} dan Rotasi Slider: {loadedSliderRotationValue} ke {gameplayEnforcers.Length} objek.");
-
+    
         foreach (LocalBoundEnforcer enforcer in gameplayEnforcers)
         {
             if (enforcer != null)
             {
-                // Bangunkan paksa dari mode tidur hemat daya
+                // Bangunkan paksa
                 Rigidbody2D rb = enforcer.GetComponent<Rigidbody2D>();
                 if (rb != null) rb.WakeUp();
 
-                // Suntikkan Kecepatan Gerak (Langsung aktif instan TANPA DELAY)
+                // Suntikkan kecepatan gerak
                 enforcer.UpdateMovementSpeed(loadedSpeed);
 
-                // Suntikkan Arah dan Kecepatan Rotasi Slider (SINKRON $100\%$)
+                // Suntikkan arah dan kecepatan rotasi slider
                 enforcer.SetRotationFromSlider(loadedSliderRotationValue, enforcer.maxRotationSpeed);
             }
         }

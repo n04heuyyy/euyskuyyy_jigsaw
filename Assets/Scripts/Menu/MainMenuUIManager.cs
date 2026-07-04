@@ -58,7 +58,7 @@ public class MainMenuUIManager : MonoBehaviour
         currentSpeedIndex = PlayerPrefs.GetInt("SavedSpeedModeIndex", 1); // Default ke Normy
         UpdateSpeedModeValue(0);
 
-        // 2. Daftarkan fungsi klik Button (Tetap sama seperti sebelumnya)
+        // Pasang button listener
         gridLeftButton.onClick.RemoveAllListeners();
         gridLeftButton.onClick.AddListener(() => UpdateGridSizeValue(-1));
 
@@ -90,8 +90,8 @@ public class MainMenuUIManager : MonoBehaviour
     public void UpdateGridSizeValue(int direction)
     {
         currentGridIndex = (currentGridIndex + direction) % gridOptions.Length;
-        if (currentGridIndex < 0) currentGridIndex += gridOptions.Length; // Pengaman angka negatif C#
-        
+        if (currentGridIndex < 0) currentGridIndex += gridOptions.Length; 
+
         // Simpan pilihan secara permanen
         PlayerPrefs.SetInt("SavedGridSizeIndex", currentGridIndex);
         PlayerPrefs.SetString("ChosenGridSizeSetting", gridOptions[currentGridIndex]);
@@ -100,7 +100,7 @@ public class MainMenuUIManager : MonoBehaviour
         // Tampilkan teks visual di antara panah (Misal: "6x6")
         if (gridSizeText != null) gridSizeText.text = gridOptions[currentGridIndex];
 
-        // Segarkan tampilan Best Time papan skor utama secara real-time
+        // Segarkan tampilan record time secara real-time
         ObjectPreviewManager prevManager = Object.FindFirstObjectByType<ObjectPreviewManager>();
         if (prevManager != null) prevManager.UpdateBestTimeDisplay();
     }
@@ -108,7 +108,7 @@ public class MainMenuUIManager : MonoBehaviour
     public void UpdateSpeedModeValue(int direction)
     {
         currentSpeedIndex = (currentSpeedIndex + direction) % speedOptions.Length;
-        if (currentSpeedIndex < 0) currentSpeedIndex += speedOptions.Length; // Pengaman angka negatif C#
+        if (currentSpeedIndex < 0) currentSpeedIndex += speedOptions.Length;
 
         // Simpan nilai float fisiknya secara langsung saat tombol diganti
         PlayerPrefs.SetInt("SavedSpeedModeIndex", currentSpeedIndex);
@@ -172,9 +172,9 @@ public class MainMenuUIManager : MonoBehaviour
     void QuitGame()
     {
         #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false; // Mematikan Play Mode di Unity Editor
+            UnityEditor.EditorApplication.isPlaying = false;
         #else
-            Application.Quit(); // Menutup game saat sudah di-build (.exe / .apk)
+            Application.Quit();
             // Dalam mode web ini akan memunculkan pesan lol XD
         #endif
     }
@@ -186,7 +186,7 @@ public class MainMenuUIManager : MonoBehaviour
         int sideSize = 4;
         if (parts.Length > 0)
         {
-            int.TryParse(parts[0], out sideSize); // Menghasilkan angka 2, 3, 4, atau 6 murni bebas dari bug penggabungan ganda
+            int.TryParse(parts[0], out sideSize); // Menghasilkan angka 2, 3, 4, atau 6
         }
 
         PlayerPrefs.SetInt("ChosenGridSize", sideSize);
